@@ -11,6 +11,7 @@ fi
 
 # Prompt for commit message if not provided
 if [ -z "$1" ]; then
+  # shellcheck disable=SC2162
   read -p "Enter commit message: " COMMIT_MESSAGE
 else
   COMMIT_MESSAGE="$1"
