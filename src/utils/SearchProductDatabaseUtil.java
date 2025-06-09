@@ -16,13 +16,9 @@ public class SearchProductDatabaseUtil {
     public static Connection getConnection() throws SQLException {
         if (conn == null || conn.isClosed()) {
             System.out.println("Loading...");
-            // Temporarily disable logger output
             Logger.getLogger("").setLevel(java.util.logging.Level.OFF);
-
             conn = DriverManager.getConnection(DB_URL, USER, PASSWORD);
             initializeDatabase();
-
-            // Re-enable logger output
             Logger.getLogger("").setLevel(java.util.logging.Level.INFO);
         }
         return conn;
@@ -30,7 +26,6 @@ public class SearchProductDatabaseUtil {
 
     private static void initializeDatabase() throws SQLException {
         String createIndex = "CREATE INDEX IF NOT EXISTS idx_products_p_name_search ON products USING GIN(to_tsvector('english', p_name))";
-
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(createIndex);
             logger.info("Index for full-text search created or already exists.");
