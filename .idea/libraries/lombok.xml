@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="lombok">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/libary/lombok.jar!/" />
+      <root url="jar://$PROJECT_DIR$/libary/postgresql-42.7.6.jar!/" />
+      <root url="jar://$PROJECT_DIR$/libary/text-table-formatter-1.1.2.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
