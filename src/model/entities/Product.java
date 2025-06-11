@@ -15,7 +15,7 @@ public class Product {
     private String category;
 
 
-    public Product(UUID uuid, int id, String name, double price, String category) {
+    public Product(UUID uuid, int id, String p_name, double price, String category) {
         this.uuid = uuid;
         this.id = id;
         this.p_name = p_name;
@@ -24,8 +24,15 @@ public class Product {
 
     }
 
+    //    @Override
+//    public String toString() {
+//
+//        return "• " + p_name + " | $" + price + " | Qty: " + qty + " | UUID: " + uuid;
+//    }
+//}
     @Override
     public String toString() {
-        return "• " + p_name + " | $" + price + " | Qty: " + qty + " | UUID: " + uuid;
+        return String.format("%-36s %-20s $%-10.2f %-5d", uuid.toString(), p_name, price, qty);
+
     }
 }
