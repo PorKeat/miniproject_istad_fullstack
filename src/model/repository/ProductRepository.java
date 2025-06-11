@@ -25,11 +25,10 @@ public class ProductRepository {
              ResultSet result = statement.executeQuery(query)) {
 
             while (result.next()) {
-                UUID uuid = UUID.fromString(result.getString("p_uuid"));
                 String category = result.getString("category_name");
 
                 Product product = new Product(
-                        uuid,
+                        UUID.randomUUID().toString(),
                         result.getInt("id"),
                         result.getString("p_name"),
                         result.getDouble("price"),
