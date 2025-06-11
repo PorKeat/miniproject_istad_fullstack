@@ -9,4 +9,5 @@ public interface UserService {
     void saveLoginStatus(String email);
     String getCurrentUser();
     void logout();
+    User findByEmail(String email);
 }

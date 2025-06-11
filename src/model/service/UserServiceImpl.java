@@ -1,6 +1,6 @@
 package model.service;
 
-import View.ValidationUtil;
+import util.ValidationUtil;
 import model.entity.User;
 import model.repository.UserRepository;
 import model.repository.UserRepositoryImpl;
@@ -76,4 +76,11 @@ public class UserServiceImpl implements UserService {
             System.out.println(e.getMessage());
         }
     }
+
+    @Override
+    public User findByEmail(String email) {
+        ValidationUtil.validateEmail(email);
+        return userRepository.findByEmail(email);
+    }
+
 }

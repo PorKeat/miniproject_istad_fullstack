@@ -1,4 +1,4 @@
-package view;
+package View;
 
 import java.util.Scanner;
 
@@ -54,4 +54,15 @@ public class AuthView {
     public void showError(String message) {
         System.out.println("Error: " + message);
     }
+
+    public String[] getProductInput() {
+        System.out.print("Enter product name: ");
+        String name = scanner.nextLine();
+        System.out.print("Enter product price: ");
+        String price = scanner.nextLine();
+        return new String[]{name, price};
+    }
+
+
+
 }

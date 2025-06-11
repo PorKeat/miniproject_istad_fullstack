@@ -1,4 +1,4 @@
-package View;
+package util;
 
 public class ValidationUtil {
 

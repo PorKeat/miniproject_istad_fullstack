@@ -48,6 +48,33 @@ public class UserRepositoryImpl implements UserRepository {
         return null;
     }
 
+    @Override
+    public User findByEmail(String email) {
+        String sql = "SELECT * FROM users WHERE email = ? AND is_deleted = false";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, email);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                return new User(
+                        rs.getInt("id"),
+                        rs.getString("user_name"),
+                        rs.getString("email"),
+                        rs.getString("password"),
+                        rs.getBoolean("is_deleted"),
+                        rs.getString("u_uuid"),
+                        rs.getString("role")
+                );
+            }
+        } catch (SQLException e) {
+            System.out.println("Error fetching user by email: " + e.getMessage());
+        }
+        return null;
+    }
+
+
 
     @Override
     public void save(User user) {
