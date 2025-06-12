@@ -1,5 +1,6 @@
 package controller;
 
+<<<<<<< HEAD
 import model.dto.ProductResponDto;
 import model.service.ProductServiceImpl;
 
@@ -13,4 +14,13 @@ public class ProductController {
     public List<ProductResponDto> showCart() {
         return productServiceImpl.getCartProducts();
     }
+=======
+public class ProductController {
+    private String name;
+    private Integer id;
+    private String uuid;
+    private Double price;
+    private boolean isDeleted;
+    private Integer qty;
+>>>>>>> origin/taiyi
 }
