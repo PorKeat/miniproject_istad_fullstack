@@ -18,7 +18,7 @@ public class ProductServiceImpl implements ProductService {
         ProductModel product = productRepository.findByUUID(UUID);
         if (product != null) {
             ProductResponDto dto = ProductMapper.mapFromProductToProductResponDto(product);
-            cart.add(dto); // Add without any limit or check
+            cart.add(dto);
             return dto;
         }
         return null;
@@ -26,6 +26,6 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public List<ProductResponDto> getCartProducts() {
-        return List.of();
+        return cart;
     }
 }

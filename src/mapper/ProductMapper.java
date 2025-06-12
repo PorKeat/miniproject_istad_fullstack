@@ -1,6 +1,5 @@
 package mapper;
 
-import lombok.Data;
 import model.dto.ProductCreateDto;
 import model.dto.ProductResponDto;
 import model.entities.ProductModel;
@@ -8,7 +7,6 @@ import model.entities.ProductModel;
 import java.util.Random;
 import java.util.UUID;
 
-@Data
 public class ProductMapper {
     public static ProductResponDto mapFromProductToProductResponDto(ProductModel product) {
         return new ProductResponDto(product.getPName(), product.getPrice(), product.getQty(), product.isDeleted(), product.getPUuid());
