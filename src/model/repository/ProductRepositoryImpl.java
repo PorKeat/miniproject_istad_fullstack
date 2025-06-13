@@ -7,9 +7,9 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ProductRepositoryImpl implements Repository<Product> {
+public class ProductRepositoryImpl implements Repository<Product>,ProductRepository {
 
-
+    @Override
     public void addProduct(Product product, int categoryId) {
         String insertProductSQL = "INSERT INTO products (p_name, price, p_uuid, is_deleted) VALUES (?, ?, ?, ?) RETURNING id";
         String insertProductCategorySQL = "INSERT INTO product_categories (product_id, category_id) VALUES (?, ?)";

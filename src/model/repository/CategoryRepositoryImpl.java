@@ -8,9 +8,9 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CategoryRepositoryImpl implements Repository<Category> {
+public class CategoryRepositoryImpl implements Repository<Category>,CategoryRepository {
 
-
+    @Override
     public void addCategory(String categoryName) {
         String sql = "INSERT INTO categories(category_name) VALUES (?)";
         try (Connection conn = DBConnection.getConnection();
@@ -82,6 +82,7 @@ public class CategoryRepositoryImpl implements Repository<Category> {
         return null;
     }
 
+    @Override
     public Category findById(Integer id) {
         String sql = "SELECT * FROM categories WHERE id = ?";
         try (Connection conn = DBConnection.getConnection();
