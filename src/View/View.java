@@ -86,7 +86,8 @@ public class View {
         System.out.println("3. Add Product To Cart");
         System.out.println("4. Show Cart");
         System.out.println("5. Order Product");
-        System.out.println("6. Log out");
+        System.out.println("6. Order History");
+        System.out.println("7. Log out");
         System.out.println("====================================");
         System.out.print("[+] Choose: ");
         return Integer.parseInt(scanner.nextLine());

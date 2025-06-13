@@ -2,10 +2,7 @@ package controller;
 
 import lombok.AllArgsConstructor;
 import model.dto.ProductResponseDto;
-import model.entity.Cart;
-import model.entity.Category;
-import model.entity.Product;
-import model.entity.User;
+import model.entity.*;
 import model.service.*;
 import View.View;
 import util.TablePaginator;
@@ -297,14 +294,70 @@ public class AuthController {
                 }
 
                 case 4 ->{
-                    TablePaginator.cartPaginateAndSelect(cartService.getUserCart(user.getId()),new Scanner(System.in),5);
+                    if (cartService.getUserCart(user.getId()).isEmpty()){
+                        System.out.println("❌ Cart is empty");
+                    }else {
+                        TablePaginator.cartPaginateAndSelect(cartService.getUserCart(user.getId()),new Scanner(System.in),5);
+                    }
+                }
+                case 5 -> {
+                    Order order = orderService.placeOrderAndReturnFullInfo(user.getId());
+
+                    if (order == null) {
+                        System.out.println("❌ Order could not be placed — cart is empty or failed.");
+                        return;
+                    }
+
+                    System.out.println("\n===================================");
+                    System.out.println("🧾 ORDER CONFIRMATION");
+                    System.out.println("===================================");
+                    System.out.printf("Order Code  : %s%n", order.getOrderCode());
+                    System.out.printf("Order Date  : %s%n", new java.sql.Date(System.currentTimeMillis()));
+                    System.out.printf("Total Price : $%.2f%n", order.getTotalPrice());
+                    System.out.println("-----------------------------------");
+                    System.out.println("📦 Items Ordered:");
+                    System.out.printf("%-20s %-5s %-10s %-10s%n", "Product", "Qty", "Unit Price", "Total");
+
+                    for (OrderProduct item : order.getOrderProducts()) {
+                        double total = item.getQty() * item.getProductPrice();
+                        System.out.printf("%-20s %-5d $%-9.2f $%-9.2f%n",
+                                item.getProductName(), item.getQty(), item.getProductPrice(), total);
+                    }
+
+                    System.out.println("===================================\n");
                 }
                 case 6->{
-                    userService.logout();
-                    view.showLogoutMessage();
+                    List<Order> history = orderService.getOrderHistory(user.getId());
+
+                    if (history.isEmpty()) {
+                        System.out.println("📭 No orders found for this user.");
+                    } else {
+                        System.out.println("\n===================================");
+                        System.out.printf("📦 ORDER HISTORY for User #%s%n", user.getUserName());
+                        System.out.println("===================================");
+
+                        for (Order order : history) {
+                            System.out.printf("\n🧾 Order Code : %s%n", order.getOrderCode());
+                            System.out.printf("   Date       : %s%n", order.getOrderDate());
+                            System.out.printf("   Total      : $%.2f%n", order.getTotalPrice());
+                            System.out.println("   --------------------------------------");
+                            System.out.println("   Items:");
+                            System.out.printf("   %-20s %-5s %-10s %-10s%n", "Product", "Qty", "Unit Price", "Total");
+
+                            for (OrderProduct item : order.getOrderProducts()) {
+                                double total = item.getQty() * item.getProductPrice();
+                                System.out.printf("   %-20s %-5d $%-9.2f $%-9.2f%n",
+                                        item.getProductName(), item.getQty(), item.getProductPrice(), total);
+                            }
+                        }
+
+                        System.out.println("\n===================================\n");
+                    }
+
                 }
                 case 7->{
-                    orderService.placeOrder(user.getId());
+                    userService.logout();
+                    view.showLogoutMessage();
                 }
             }
         }catch (Exception e){

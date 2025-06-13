@@ -1,5 +1,6 @@
 package model.repository;
 
+import db.DBConnection;
 import model.entity.Order;
 import model.entity.OrderProduct;
 import model.repository.OrderRepository;
@@ -73,6 +74,7 @@ public class OrderRepositoryImpl implements OrderRepository {
         }
     }
 
+    @Override
     public List<OrderProduct> getOrderProducts(Connection conn, int orderId) throws SQLException {
         String sql = """
         SELECT op.product_id, p.p_name, p.price, op.qty
@@ -96,6 +98,49 @@ public class OrderRepositoryImpl implements OrderRepository {
             }
         }
         return products;
+    }
+
+    @Override
+    public List<Order> getOrdersByUserId(Connection conn, int userId) throws SQLException {
+        String sql = """
+        SELECT id, order_date, total_price, order_code
+        FROM orders
+        WHERE user_id = ?
+        ORDER BY order_date DESC
+    """;
+
+        List<Order> orders = new ArrayList<>();
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, userId);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                Order order = new Order();
+                order.setId(rs.getInt("id"));
+                order.setUserId(userId);
+                order.setOrderDate(rs.getDate("order_date"));
+                order.setTotalPrice(rs.getDouble("total_price"));
+                order.setOrderCode(rs.getString("order_code"));
+
+                // Fetch products for this order
+                List<OrderProduct> products = getOrderProducts(conn, order.getId());
+                order.setOrderProducts(products);
+
+                orders.add(order);
+            }
+        }
+        return orders;
+    }
+
+    @Override
+    public List<Order> getOrderHistory(int userId) {
+        try (Connection conn = DBConnection.getConnection()) {
+            return getOrdersByUserId(conn, userId);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return List.of();
+        }
     }
 
 

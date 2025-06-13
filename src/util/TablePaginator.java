@@ -156,9 +156,10 @@ public class TablePaginator {
             int end = Math.min(start + pageSize, total);
 
             Table table = new Table(4, BorderStyle.UNICODE_BOX_DOUBLE_BORDER, ShownBorders.ALL);
-            table.setColumnWidth(0, 15, 25);
-            table.setColumnWidth(1, 30, 45);
+            table.setColumnWidth(0, 30, 25);
+            table.setColumnWidth(1, 10, 45);
             table.setColumnWidth(2, 10, 15);
+            table.setColumnWidth(3, 10, 15);
 
             table.addCell("Product Name", center);
             table.addCell("Quantity", center);
