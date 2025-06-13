@@ -251,7 +251,10 @@ public class AuthController {
 
                     System.out.println("✅ Product added to cart.");
                 }
-                case 5->{
+                case 4 ->{
+                    TablePaginator.cartPaginateAndSelect(cartService.getUserCart(user.getId()),new Scanner(System.in),5);
+                }
+                case 6->{
                     userService.logout();
                     view.showLogoutMessage();
                 }

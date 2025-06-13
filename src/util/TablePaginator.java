@@ -1,6 +1,7 @@
 package util;
 
 import model.dto.ProductResponseDto;
+import model.entity.Cart;
 import model.entity.Category;
 import org.nocrala.tools.texttablefmt.BorderStyle;
 import org.nocrala.tools.texttablefmt.CellStyle;
@@ -98,6 +99,48 @@ public class TablePaginator {
             } else {
                 boolean found = list.stream().anyMatch(p -> p.uuid().equals(input));
                 if (found) return;
+            }
+        }
+    }
+
+    public static void cartPaginateAndSelect(List<Cart> list, Scanner scanner, int pageSize) {
+        int total = list.size();
+        int page = 0;
+
+        while (true) {
+            int start = page * pageSize;
+            int end = Math.min(start + pageSize, total);
+
+            Table table = new Table(4, BorderStyle.UNICODE_BOX_DOUBLE_BORDER, ShownBorders.ALL);
+            table.setColumnWidth(0, 15, 25);
+            table.setColumnWidth(1, 30, 45);
+            table.setColumnWidth(2, 10, 15);
+
+            table.addCell("Product Name", center);
+            table.addCell("Quantity", center);
+            table.addCell("Price", center);
+            table.addCell("Total", center);
+
+            for (int i = start; i < end; i++) {
+                Cart c = list.get(i);
+                table.addCell(c.getProductName(), center);
+                table.addCell(String.valueOf(c.getQty()), center);
+                table.addCell(String.valueOf(c.getPrice()), center);
+                table.addCell(String.valueOf((c.getQty()*c.getPrice())),center);
+            }
+
+            System.out.println(table.render());
+            System.out.println("[Page " + (page + 1) + " of " + ((total + pageSize - 1) / pageSize) + "]");
+            System.out.print("Enter Product UUID or (n)ext, (p)rev, (q)uit: ");
+
+            String input = scanner.nextLine().trim();
+
+            if (input.equalsIgnoreCase("n") && end < total) {
+                page++;
+            } else if (input.equalsIgnoreCase("p") && page > 0) {
+                page--;
+            } else if (input.equalsIgnoreCase("q")) {
+                return;
             }
         }
     }

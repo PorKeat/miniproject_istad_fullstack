@@ -13,8 +13,11 @@ import java.sql.Date;
 @AllArgsConstructor
 @Builder
 public class Cart {
-    private int userId;
-    private int productId;
-    private int qty;
+    private Integer userId;
+    private Integer productId;
+    private Integer qty;
     private Date addedAt;
+    private String productName;
+    private String username;
+    private Double price;
 }

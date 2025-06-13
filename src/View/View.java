@@ -80,8 +80,9 @@ public class View {
         System.out.println("1. Show Product");
         System.out.println("2. Search Product");
         System.out.println("3. Add Product To Cart");
-        System.out.println("4. Order Product");
-        System.out.println("5. Log out");
+        System.out.println("4. Show Cart");
+        System.out.println("5. Order Product");
+        System.out.println("6. Log out");
         System.out.print("Choose: ");
         return Integer.parseInt(scanner.nextLine());
     }

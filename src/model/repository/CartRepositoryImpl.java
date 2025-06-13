@@ -34,8 +34,14 @@ public class CartRepositoryImpl implements CartRepository {
 
     @Override
     public List<Cart> findByUserId(int userId) {
-        List<Cart> carts = new ArrayList<>();
-        String sql = "SELECT * FROM carts WHERE user_id = ?";
+        List<Cart> cartItems = new ArrayList<>();
+        String sql = """
+                    SELECT c.user_id, c.product_id, c.qty, c.added_at, p.p_name, p.price, u.user_name
+                    FROM carts c
+                    JOIN products p ON c.product_id = p.id
+                    JOIN users u ON c.user_id = u.id
+                    WHERE c.user_id = ?
+                    """;
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -44,17 +50,22 @@ public class CartRepositoryImpl implements CartRepository {
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
-                carts.add(new Cart(
+                cartItems.add(new Cart(
                         rs.getInt("user_id"),
                         rs.getInt("product_id"),
                         rs.getInt("qty"),
-                        rs.getDate("added_at")
+                        rs.getDate("added_at"),
+                        rs.getString("p_name"),
+                        rs.getString("user_name"),
+                        rs.getDouble("price")
                 ));
             }
         } catch (SQLException e) {
-            System.out.println("Error retrieving cart: " + e.getMessage());
+            System.out.println("Error retrieving cart items: " + e.getMessage());
         }
 
-        return carts;
+        return cartItems;
     }
+
+
 }
