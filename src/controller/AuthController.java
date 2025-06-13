@@ -1,52 +1,50 @@
 package controller;
 
 import lombok.AllArgsConstructor;
+import model.dto.ProductResponseDto;
+import model.entity.Cart;
 import model.entity.Category;
 import model.entity.Product;
 import model.entity.User;
-import model.repository.CategoryRepository;
-import model.repository.CategoryRepositoryImpl;
-import model.service.ProductService;
-import model.service.ProductServiceImpl;
-import model.service.UserService;
-import view.AuthView;
-import util.CategoryPaginator;
+import model.service.*;
+import View.View;
+import util.TablePaginator;
 
 import java.util.List;
 import java.util.Scanner;
 import java.util.UUID;
 
+
 @AllArgsConstructor
 public class AuthController {
     private final UserService userService;
-    private final AuthView view;
+    private final View view;
     private final ProductService productService = new ProductServiceImpl();
+    private final CategoryService categoryService = new CategoryServiceImpl();
+    private final CartService cartService = new CartServiceImpl();
     private final Scanner scanner = new Scanner(System.in);
-
 
 
 
     public void handleSession() {
         while (true) {
             String current = userService.getCurrentUser();
-
             if (current != null && !current.isBlank()) {
-                view.showAlreadyLoggedIn(current);
+                User user = userService.findByEmail(current);
 
-                if (view.promptLogout()) {
-                    userService.logout();
-                    view.showLogoutMessage();
-                } else {
-                    // Stay logged in → show dashboard
-                    User user = userService.findByEmail(current); // You need this method
-                    if (user != null) {
-                        switch (user.getRole().toLowerCase()) {
-                            case "admin" -> handleAdminTasks(user);
-                            case "user" -> handleUserTasks(user);
-                            default -> view.showError("Unknown role: " + user.getRole());
-                        }
+                if (user != null) {
+                    view.showAlreadyLoggedIn(current);
+
+                    switch (user.getRole().toLowerCase()) {
+                        case "admin" -> handleAdminTasks(user);
+                        case "user" -> handleUserTasks(user);
+                        default -> view.showError("Unknown role: " + user.getRole());
                     }
+                } else {
+                    view.showError("Logged in user not found.");
+                    userService.logout();
                 }
+
             } else {
                 switch (view.showMenu()) {
                     case 1 -> handleLogin();
@@ -58,8 +56,9 @@ public class AuthController {
     }
 
 
+
     private void handleLogin() {
-        String[] creds = view.getLoginDetails();
+        String[] creds = view.getAuth();
 
         try {
             User user = userService.login(creds[0], creds[1]);
@@ -84,18 +83,17 @@ public class AuthController {
     }
 
     private void handleRegistration() {
-        String[] creds = view.getRegistrationDetails();
-        String name = view.getUsernamePrompt();
+        String[] creds = view.getAuth();
+        String name = view.getStringInput("Name");
 
-        User newUser = new User(
-                null,
-                name,
-                creds[0],
-                creds[1],
-                false,
-                UUID.randomUUID().toString(),
-                "user"
-        );
+        User newUser = User
+                .builder()
+                .userName(name)
+                .email(creds[0])
+                .password(creds[1])
+                .uUuid(UUID.randomUUID().toString())
+                .role("user")
+                .build();
 
         try {
             userService.register(newUser);
@@ -107,46 +105,162 @@ public class AuthController {
     }
 
     private void handleAdminTasks(User admin) {
-        System.out.println("\n== Admin Panel ==");
-        System.out.println("1. Add Product");
-        System.out.println("2. Log out");
+        switch (view.adminMenu()) {
+            case 1 -> {
+                List<Category> categories = categoryService.getAllCategories();
+                int selectedId = TablePaginator.categoryPaginateAndSelect(categories, scanner, 3);
+                Category selected = categories.stream()
+                        .filter(c -> c.getId() == selectedId)
+                        .findFirst()
+                        .orElse(null);
 
-        int choice = Integer.parseInt(scanner.nextLine());
+                if (selected == null) {
+                    System.out.println("❌ Category creation cancelled.");
+                    break;
+                }
 
-        if (choice == 1) {
-            CategoryRepository categoryRepo = new CategoryRepositoryImpl();
-            List<Category> categories = categoryRepo.findAll();
+                int categoryId = selected.getId();
+                String[] input = view.getProductInput();
 
-            int categoryId = CategoryPaginator.paginateAndSelect(categories, scanner, 5);
-            if (categoryId == -1) {
-                view.showError("Cancelled adding product.");
-                return;
+                try {
+                    Product product = new Product(
+                            null,
+                            input[0],
+                            Double.parseDouble(input[1]),
+                            false,
+                            UUID.randomUUID().toString()
+                            ,selected.getCategoryName()
+                    );
+                    productService.addProduct(product, categoryId);
+                    System.out.println("✅ Product added successfully.");
+                } catch (Exception e) {
+                    view.showError("Failed to add product: " + e.getMessage());
+                }
             }
 
-            String[] input = view.getProductInput();
-            try {
-                Product product = new Product(
-                        null,
-                        input[0],
-                        Double.parseDouble(input[1]),
-                        false,
-                        UUID.randomUUID().toString()
-                );
-                productService.addProduct(product, categoryId);
-                System.out.println("✅ Product added successfully.");
-            } catch (Exception e) {
-                view.showError("Failed to add product: " + e.getMessage());
+            case 2 -> {
+                try {
+                    String name = view.getStringInput("Category Name");
+                    categoryService.addCategory(name.toUpperCase());
+                    System.out.println("✅ Category added successfully.");
+                } catch (Exception e) {
+                    view.showError("Failed to add category: " + e.getMessage());
+                }
             }
 
-
-        } else {
-            System.out.println("Returning to main menu...");
+            case 3 -> {
+                try {
+                    List<ProductResponseDto> products = productService.getAllProducts();
+                    if (products.isEmpty()) {
+                        System.out.println("No products found.");
+                    } else {
+                        TablePaginator.productPaginateAndSelect(products, new Scanner(System.in), 5);
+                    }
+                } catch (Exception e) {
+                    view.showError("Failed to fetch products: " + e.getMessage());
+                }
+            }
+            case 4 -> {
+                try {
+                    List<Category> categories = categoryService.getAllCategories();
+                    if (categories.isEmpty()) {
+                        System.out.println("No products found.");
+                    } else {
+                        TablePaginator.categoryPaginateAndSelect(categories, new Scanner(System.in), 5);
+                    }
+                } catch (Exception e) {
+                    view.showError("Failed to fetch products: " + e.getMessage());
+                }
+            }
+            case 5->{
+                try {
+                    List<ProductResponseDto> serachResult = productService.searchProductByName(view.getStringInput("Product Name"));
+                    if (serachResult.isEmpty()) {
+                        System.out.println("No products found.");
+                    } else {
+                        TablePaginator.productPaginateAndSelect(serachResult, new Scanner(System.in), 5);
+                    }
+                } catch (Exception e) {
+                    view.showError("Failed to fetch products: " + e.getMessage());
+                }
+            }
+            case 6->{
+                try {
+                    List<Category> serachResult = categoryService.searchCategoryByName(view.getStringInput("Product Name").toUpperCase());
+                    if (serachResult.isEmpty()) {
+                        System.out.println("No products found.");
+                    } else {
+                        TablePaginator.categoryPaginateAndSelect(serachResult, new Scanner(System.in), 5);
+                    }
+                } catch (Exception e) {
+                    view.showError("Failed to fetch products: " + e.getMessage());
+                }
+            }
+            case 7->{
+                try {
+                    productService.deleteProductByUuid(view.getStringInput("UUID"));
+                }catch (Exception e) {
+                    view.showError("Failed to delete products: " + e.getMessage());
+                }
+            }
+            case 8 ->{
+                try {
+                    categoryService.deleteCategoryById(view.getIntegerInput("ID"));
+                }catch (Exception e) {
+                    view.showError("Failed to delete products: " + e.getMessage());
+                }
+            }
+            case 9->{
+                userService.logout();
+                view.showLogoutMessage();
+            }
+            default -> System.out.println("Invalid menu option.");
         }
     }
 
 
     private void handleUserTasks(User user) {
-        System.out.println("Welcome to the user dashboard, " + user.getUserName());
-        // user feature here
+        try{
+            System.out.println("Welcome to our system, " + user.getUserName());
+            switch (view.userMenu()){
+                case 1 ->{
+                    List<ProductResponseDto> products = productService.getAllProducts();
+                    if (products.isEmpty()) {
+                        System.out.println("No products found.");
+                    } else {
+                            TablePaginator.productPaginateAndSelect(products, new Scanner(System.in), 5);
+                    }
+                }
+                case 2 ->{
+                    List<ProductResponseDto> serachResult = productService.searchProductByName(view.getStringInput("Product Name"));
+                    if (serachResult.isEmpty()) {
+                        System.out.println("No products found.");
+                    } else {
+                        TablePaginator.productPaginateAndSelect(serachResult, new Scanner(System.in), 5);
+                    }
+                }
+                case 3 -> {
+                    int productInput = view.getIntegerInput("Product ID");
+                    int qty = view.getIntegerInput("Qty");
+
+                    cartService.addToCart(Cart.builder()
+                            .userId(user.getId())
+                            .productId(productInput)
+                            .qty(qty)
+                            .build());
+
+                    System.out.println("✅ Product added to cart.");
+                }
+                case 4 ->{
+                    TablePaginator.cartPaginateAndSelect(cartService.getUserCart(user.getId()),new Scanner(System.in),5);
+                }
+                case 6->{
+                    userService.logout();
+                    view.showLogoutMessage();
+                }
+            }
+        }catch (Exception e){
+            System.out.println(e.getMessage());
+        }
     }
 }
