@@ -2,10 +2,11 @@ package model.repository;
 
 import db.DBConnection;
 import model.entity.Product;
-
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+
 
 public class ProductRepositoryImpl implements Repository<Product>,ProductRepository {
 
@@ -64,38 +65,61 @@ public class ProductRepositoryImpl implements Repository<Product>,ProductReposit
 
     @Override
     public List<Product> findAll() {
-        List<Product> productList = new ArrayList<>();
+        final long startTime = System.nanoTime();
+        final String sql = """
+    SELECT c.category_name, p.p_uuid, p.p_name, p.price
+    FROM products p
+    JOIN product_categories pc ON p.id = pc.product_id
+    JOIN categories c ON pc.category_id = c.id
+    WHERE p.is_deleted = false
+    ORDER BY c.category_name, p.p_name
+    """;
 
-        String sql = """ 
-                    SELECT c.category_name, p.p_uuid, p.p_name, p.price
-                    FROM categories c
-                    JOIN product_categories pc ON c.id = pc.category_id
-                    JOIN products p ON pc.product_id = p.id
-                    WHERE p.is_deleted = false
-                    ORDER BY c.category_name, p.p_name
-                    """;
+        List<Product> productList = new ArrayList<>(10_000); // Pre-allocated for efficiency
 
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setReadOnly(true);
 
-            while (rs.next()) {
-
-                productList.add(Product.builder()
-                        .uuid(rs.getString("p_uuid"))
-                        .name(rs.getString("p_name"))
-                        .price(rs.getDouble("price"))
-                        .category(rs.getString("category_name"))
-                        .build());
+            String dbProductName = conn.getMetaData().getDatabaseProductName();
+            if ("PostgreSQL".equalsIgnoreCase(dbProductName)) {
+                conn.setAutoCommit(false);
             }
-            return productList;
 
+            try (PreparedStatement ps = conn.prepareStatement(
+                    sql,
+                    ResultSet.TYPE_FORWARD_ONLY,
+                    ResultSet.CONCUR_READ_ONLY)) {
+
+                if ("PostgreSQL".equalsIgnoreCase(dbProductName)) {
+                    ps.setFetchSize(5000);
+                } else if ("MySQL".equalsIgnoreCase(dbProductName)) {
+                    ps.setFetchSize(Integer.MIN_VALUE);
+                }
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        productList.add(Product.builder()
+                                .category(rs.getString("category_name"))
+                                .uuid(rs.getString("p_uuid"))
+                                .name(rs.getString("p_name"))
+                                .price(rs.getDouble("price"))
+                                .build());
+                    }
+                }
+            }
         } catch (SQLException e) {
-            System.out.println("Error fetching products by category: " + e.getMessage());
+            System.err.printf("⛔ [%s][%d] %s%n", e.getSQLState(), e.getErrorCode(), e.getMessage());
+            return Collections.emptyList();
         }
 
-        return null;
+        final long endTime = System.nanoTime();
+        final double seconds = (endTime - startTime) / 1_000_000_000.0;
+        System.out.printf("🚀 Loaded %,d products in %.2f sec (%,.0f rec/sec)%n",
+                productList.size(), seconds, productList.size() / seconds);
+
+        return productList;
     }
+
 
     @Override
     public List<Product> searchByName(String name) {
@@ -160,4 +184,63 @@ public class ProductRepositoryImpl implements Repository<Product>,ProductReposit
         }
         return null;
     }
+
+
+    public void insertStaticProducts(int numberOfProducts, int categoryId) {
+        String sql = """
+        WITH inserted AS (
+            INSERT INTO products (p_name, price, p_uuid, is_deleted)
+            SELECT 'StaticProduct_' || gs, 99.99, gen_random_uuid(), false
+            FROM generate_series(1, CAST(? AS INTEGER)) AS gs
+            RETURNING id
+        )
+        INSERT INTO product_categories (product_id, category_id)
+        SELECT id, ? FROM inserted;
+        """;
+
+        long startTime = System.nanoTime();
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            conn.setAutoCommit(false);
+
+            stmt.setInt(1, numberOfProducts);
+            stmt.setInt(2, categoryId);
+
+            int inserted = stmt.executeUpdate();
+            conn.commit();
+
+            long endTime = System.nanoTime();
+            double elapsedSec = (endTime - startTime) / 1_000_000_000.0;
+
+            System.out.printf("✅ Inserted %,d products in %.2f sec (%,.0f records/sec)%n",
+                    numberOfProducts, elapsedSec, numberOfProducts / elapsedSec);
+
+        } catch (SQLException e) {
+            System.err.println("💥 SQL Error:"+e.getMessage());
+        }catch (NumberFormatException e){
+            System.out.println(e.getMessage());
+        }
+    }
+
+
+
+    public void dropAllStaticProducts() {
+        try (Connection conn = DBConnection.getConnection();
+             Statement stmt = conn.createStatement()) {
+
+            conn.setAutoCommit(false);
+
+            stmt.executeUpdate("TRUNCATE TABLE product_categories, products RESTART IDENTITY CASCADE");
+
+            conn.commit();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Truncation failed", e);
+        }
+    }
+
+
+
 }

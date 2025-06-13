@@ -10,4 +10,6 @@ public interface ProductService {
     boolean deleteProductByUuid(String uuid);
     List<ProductResponseDto> getAllProducts();
     List<ProductResponseDto> searchProductByName(String name);
+    void insertStaticProducts(int numberOfProducts, int categoryId);
+    void dropAllStaticProducts();
 }

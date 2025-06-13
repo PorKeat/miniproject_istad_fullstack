@@ -5,9 +5,9 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DBConnection {
-    private static final String URL = "jdbc:postgresql://ecommerce-istad-miniproject-alexkgm2412-1226.f.aivencloud.com:10132/defaultdb?sslmode=require";
-    private static final String USER = "avnadmin";
-    private static final String PASSWORD = "AVNS_c68zmWJiGuAGzeqLjcS";
+    private static final String URL = "jdbc:postgresql://localhost:5432/mini_project";
+    private static final String USER = "postgres";
+    private static final String PASSWORD = "1234";
 
     public static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(URL, USER, PASSWORD);

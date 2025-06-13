@@ -11,14 +11,16 @@ import java.io.*;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository = new UserRepositoryImpl();
-    private static final String STATUS_FILE = "C:\\Users\\AlexKGM\\OneDrive\\Desktop\\JavaMIniProject\\MiniProject\\src\\data\\login_status.txt";
+    private static final String STATUS_FILE = "src/data/login_status.txt";
 
     @Override
     public void register(User user) {
-        // Validation
+        if (user == null) {
+            throw new IllegalArgumentException("User cannot be null.");
+        }
+
         validateUserForRegistration(user);
 
-        // Hash password
         String hashedPassword = HashUtil.sha256(user.getPassword());
         user.setPassword(hashedPassword);
 
@@ -34,7 +36,6 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByEmailAndPassword(email, hashed);
     }
 
-
     private void validateUserForRegistration(User user) {
         ValidationUtil.validateUsername(user.getUserName());
         ValidationUtil.validateEmail(user.getEmail());
@@ -47,22 +48,25 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public boolean userExists(String email) {
+        ValidationUtil.validateEmail(email);
         return userRepository.existsByEmail(email);
     }
 
     @Override
     public void saveLoginStatus(String email) {
+        ValidationUtil.validateEmail(email);
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(STATUS_FILE))) {
             writer.write(email);
         } catch (IOException e) {
-            System.out.println(e.getMessage());
+            throw new RuntimeException("Failed to save login status: " + e.getMessage());
         }
     }
 
     @Override
     public String getCurrentUser() {
         try (BufferedReader reader = new BufferedReader(new FileReader(STATUS_FILE))) {
-            return reader.readLine();
+            String line = reader.readLine();
+            return (line != null && !line.isBlank()) ? line : null;
         } catch (IOException e) {
             return null;
         }
@@ -73,7 +77,7 @@ public class UserServiceImpl implements UserService {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(STATUS_FILE))) {
             writer.write("");
         } catch (IOException e) {
-            System.out.println(e.getMessage());
+            throw new RuntimeException("Failed to logout: " + e.getMessage());
         }
     }
 
@@ -82,5 +86,5 @@ public class UserServiceImpl implements UserService {
         ValidationUtil.validateEmail(email);
         return userRepository.findByEmail(email);
     }
-
 }
+

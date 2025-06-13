@@ -22,6 +22,7 @@ public class AuthController {
     private final ProductService productService = new ProductServiceImpl();
     private final CategoryService categoryService = new CategoryServiceImpl();
     private final CartService cartService = new CartServiceImpl();
+    private final OrderService orderService = new OrderServiceImpl();
     private final Scanner scanner = new Scanner(System.in);
 
 
@@ -60,6 +61,11 @@ public class AuthController {
     private void handleLogin() {
         String[] creds = view.getAuth();
 
+        if (creds[0].isEmpty() || creds[1].isEmpty()) {
+            view.showError("Email and password cannot be empty.");
+            return;
+        }
+
         try {
             User user = userService.login(creds[0], creds[1]);
 
@@ -82,12 +88,17 @@ public class AuthController {
         }
     }
 
+
     private void handleRegistration() {
         String[] creds = view.getAuth();
         String name = view.getStringInput("Name");
 
-        User newUser = User
-                .builder()
+        if (name.isEmpty() || creds[0].isEmpty() || creds[1].isEmpty()) {
+            view.showError("Name, email, and password cannot be empty.");
+            return;
+        }
+
+        User newUser = User.builder()
                 .userName(name)
                 .email(creds[0])
                 .password(creds[1])
@@ -104,10 +115,16 @@ public class AuthController {
         }
     }
 
+
     private void handleAdminTasks(User admin) {
         switch (view.adminMenu()) {
             case 1 -> {
                 List<Category> categories = categoryService.getAllCategories();
+                if (categories.isEmpty()) {
+                    view.showError("No categories available. Please add one first.");
+                    break;
+                }
+
                 int selectedId = TablePaginator.categoryPaginateAndSelect(categories, scanner, 3);
                 Category selected = categories.stream()
                         .filter(c -> c.getId() == selectedId)
@@ -115,28 +132,32 @@ public class AuthController {
                         .orElse(null);
 
                 if (selected == null) {
-                    System.out.println("❌ Category creation cancelled.");
+                    view.showError("Invalid category selected.");
                     break;
                 }
 
-                int categoryId = selected.getId();
                 String[] input = view.getProductInput();
+                if (input[0].isEmpty() || input[1].isEmpty()) {
+                    view.showError("Product name and price cannot be empty.");
+                    break;
+                }
 
                 try {
+                    double price = Double.parseDouble(input[1]);
+                    if (price < 0) throw new IllegalArgumentException("Price cannot be negative.");
+
                     Product product = new Product(
-                            null,
-                            input[0],
-                            Double.parseDouble(input[1]),
-                            false,
-                            UUID.randomUUID().toString()
-                            ,selected.getCategoryName()
-                    );
-                    productService.addProduct(product, categoryId);
+                            null, input[0], price, false, UUID.randomUUID().toString(), selected.getCategoryName());
+
+                    productService.addProduct(product, selected.getId());
                     System.out.println("✅ Product added successfully.");
+                } catch (NumberFormatException e) {
+                    view.showError("Invalid price format.");
                 } catch (Exception e) {
                     view.showError("Failed to add product: " + e.getMessage());
                 }
             }
+
 
             case 2 -> {
                 try {
@@ -196,13 +217,21 @@ public class AuthController {
                     view.showError("Failed to fetch products: " + e.getMessage());
                 }
             }
-            case 7->{
+            case 7 -> {
+                String uuid = view.getStringInput("UUID");
+                if (uuid.isEmpty()) {
+                    view.showError("UUID cannot be empty.");
+                    break;
+                }
+
                 try {
-                    productService.deleteProductByUuid(view.getStringInput("UUID"));
-                }catch (Exception e) {
-                    view.showError("Failed to delete products: " + e.getMessage());
+                    productService.deleteProductByUuid(uuid);
+                    System.out.println("✅ Product deleted.");
+                } catch (Exception e) {
+                    view.showError("Failed to delete product: " + e.getMessage());
                 }
             }
+
             case 8 ->{
                 try {
                     categoryService.deleteCategoryById(view.getIntegerInput("ID"));
@@ -210,7 +239,13 @@ public class AuthController {
                     view.showError("Failed to delete products: " + e.getMessage());
                 }
             }
-            case 9->{
+            case 10->{
+                productService.insertStaticProducts(view.getIntegerInput("Amount"),1);
+            }
+            case 11->{
+                productService.dropAllStaticProducts();
+            }
+            case 12->{
                 userService.logout();
                 view.showLogoutMessage();
             }
@@ -240,23 +275,36 @@ public class AuthController {
                     }
                 }
                 case 3 -> {
-                    int productInput = view.getIntegerInput("Product ID");
+                    int productId = view.getIntegerInput("Product ID");
                     int qty = view.getIntegerInput("Qty");
 
-                    cartService.addToCart(Cart.builder()
-                            .userId(user.getId())
-                            .productId(productInput)
-                            .qty(qty)
-                            .build());
+                    if (productId <= 0 || qty <= 0) {
+                        view.showError("Product ID and quantity must be positive.");
+                        break;
+                    }
 
-                    System.out.println("✅ Product added to cart.");
+                    try {
+                        cartService.addToCart(Cart.builder()
+                                .userId(user.getId())
+                                .productId(productId)
+                                .qty(qty)
+                                .build());
+
+                        System.out.println("✅ Product added to cart.");
+                    } catch (Exception e) {
+                        view.showError("Failed to add to cart: " + e.getMessage());
+                    }
                 }
+
                 case 4 ->{
                     TablePaginator.cartPaginateAndSelect(cartService.getUserCart(user.getId()),new Scanner(System.in),5);
                 }
                 case 6->{
                     userService.logout();
                     view.showLogoutMessage();
+                }
+                case 7->{
+                    orderService.placeOrder(user.getId());
                 }
             }
         }catch (Exception e){
