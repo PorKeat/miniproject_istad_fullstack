@@ -21,6 +21,13 @@ public class AuthController {
     private final CartService cartService = new CartServiceImpl();
     private final OrderService orderService = new OrderServiceImpl();
     private final Scanner scanner = new Scanner(System.in);
+    private static final String RESET = "\u001B[0m";
+    private static final String CYAN = "\u001B[36m";
+    private static final String GREEN = "\u001B[32m";
+    private static final String RED = "\u001B[31m";
+    private static final String YELLOW = "\u001B[33m";
+    private static final String BLUE = "\u001B[34m";
+    private static final String BOLD = "\u001B[1m";
 
 
 
@@ -304,19 +311,19 @@ public class AuthController {
                     Order order = orderService.placeOrderAndReturnFullInfo(user.getId());
 
                     if (order == null) {
-                        System.out.println("❌ Order could not be placed — cart is empty or failed.");
+                        System.out.println(RED + "❌ Order could not be placed — cart is empty or failed." + RESET);
                         return;
                     }
 
-                    System.out.println("\n===================================");
-                    System.out.println("🧾 ORDER CONFIRMATION");
-                    System.out.println("===================================");
-                    System.out.printf("Order Code  : %s%n", order.getOrderCode());
-                    System.out.printf("Order Date  : %s%n", new java.sql.Date(System.currentTimeMillis()));
-                    System.out.printf("Total Price : $%.2f%n", order.getTotalPrice());
-                    System.out.println("-----------------------------------");
-                    System.out.println("📦 Items Ordered:");
-                    System.out.printf("%-20s %-5s %-10s %-10s%n", "Product", "Qty", "Unit Price", "Total");
+                    System.out.println(BLUE + "\n===================================" + RESET);
+                    System.out.println(BOLD + "🧾 ORDER CONFIRMATION" + RESET);
+                    System.out.println(BLUE + "===================================" + RESET);
+                    System.out.printf(CYAN + "Order Code  : %s%n" + RESET, order.getOrderCode());
+                    System.out.printf(CYAN + "Order Date  : %s%n" + RESET, new java.sql.Date(System.currentTimeMillis()));
+                    System.out.printf(GREEN + "Total Price : $%.2f%n" + RESET, order.getTotalPrice());
+                    System.out.println(BLUE + "-----------------------------------" + RESET);
+                    System.out.println(YELLOW + "📦 Items Ordered:" + RESET);
+                    System.out.printf(BOLD + "%-20s %-5s %-10s %-10s%n" + RESET, "Product", "Qty", "Unit Price", "Total");
 
                     for (OrderProduct item : order.getOrderProducts()) {
                         double total = item.getQty() * item.getProductPrice();
@@ -324,25 +331,26 @@ public class AuthController {
                                 item.getProductName(), item.getQty(), item.getProductPrice(), total);
                     }
 
-                    System.out.println("===================================\n");
+                    System.out.println(BLUE + "===================================\n" + RESET);
                 }
-                case 6->{
+
+                case 6 -> {
                     List<Order> history = orderService.getOrderHistory(user.getId());
 
                     if (history.isEmpty()) {
-                        System.out.println("📭 No orders found for this user.");
+                        System.out.println(RED + "📭 No orders found for this user." + RESET);
                     } else {
-                        System.out.println("\n===================================");
-                        System.out.printf("📦 ORDER HISTORY for User #%s%n", user.getUserName());
-                        System.out.println("===================================");
+                        System.out.println(BLUE + "\n===================================" + RESET);
+                        System.out.printf(BOLD + "📦 ORDER HISTORY for User #%s%n" + RESET, user.getUserName());
+                        System.out.println(BLUE + "===================================" + RESET);
 
                         for (Order order : history) {
-                            System.out.printf("\n🧾 Order Code : %s%n", order.getOrderCode());
-                            System.out.printf("   Date       : %s%n", order.getOrderDate());
-                            System.out.printf("   Total      : $%.2f%n", order.getTotalPrice());
-                            System.out.println("   --------------------------------------");
-                            System.out.println("   Items:");
-                            System.out.printf("   %-20s %-5s %-10s %-10s%n", "Product", "Qty", "Unit Price", "Total");
+                            System.out.printf("\n" + GREEN + "🧾 Order Code : %s%n" + RESET, order.getOrderCode());
+                            System.out.printf(CYAN + "   Date       : %s%n" + RESET, order.getOrderDate());
+                            System.out.printf(GREEN + "   Total      : $%.2f%n" + RESET, order.getTotalPrice());
+                            System.out.println(BLUE + "   --------------------------------------" + RESET);
+                            System.out.println(YELLOW + "   Items:" + RESET);
+                            System.out.printf(BOLD + "   %-20s %-5s %-10s %-10s%n" + RESET, "Product", "Qty", "Unit Price", "Total");
 
                             for (OrderProduct item : order.getOrderProducts()) {
                                 double total = item.getQty() * item.getProductPrice();
@@ -351,10 +359,10 @@ public class AuthController {
                             }
                         }
 
-                        System.out.println("\n===================================\n");
+                        System.out.println(BLUE + "\n===================================\n" + RESET);
                     }
-
                 }
+
                 case 7->{
                     userService.logout();
                     view.showLogoutMessage();
