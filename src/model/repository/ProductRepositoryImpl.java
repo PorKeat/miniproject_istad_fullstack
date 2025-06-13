@@ -6,6 +6,7 @@ import model.entity.Product;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ProductRepositoryImpl implements Repository<Product>,ProductRepository {
 
@@ -159,5 +160,31 @@ public class ProductRepositoryImpl implements Repository<Product>,ProductReposit
             System.out.println(e.getMessage());
         }
         return null;
+    }
+
+    public List<Product> findByIds(Connection conn, List<Integer> productIds) throws SQLException {
+        String sql = "SELECT p.id, p.p_name, p.price, p.is_deleted, p.p_uuid, " +
+                "c.category_name FROM products p " +
+                "LEFT JOIN product_categories pc ON p.id = pc.product_id " +
+                "LEFT JOIN categories c ON c.id = pc.category_id " +
+                "WHERE p.id IN (" + productIds.stream().map(String::valueOf)
+                .collect(Collectors.joining(",")) + ") " +
+                "AND p.is_deleted = false";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            List<Product> products = new ArrayList<>();
+            while (rs.next()) {
+                products.add(new Product(
+                        rs.getInt("id"),
+                        rs.getString("p_name"),
+                        rs.getDouble("price"),
+                        rs.getBoolean("is_deleted"),
+                        rs.getString("p_uuid"),
+                        rs.getString("category_name")
+                ));
+            }
+            return products;
+        }
     }
 }

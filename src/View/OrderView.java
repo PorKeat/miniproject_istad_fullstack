@@ -4,7 +4,7 @@ import model.dto.OrderProductResponseDto;
 import model.dto.OrderResponseDto;
 
 public class OrderView {
-    private void displayOrderDetails(OrderResponseDto order) {
+    public void displayOrderDetails(OrderResponseDto order) {
         System.out.println("\n=== ORDER DETAILS ===");
         System.out.println("Order #: " + order.orderCode() );
         System.out.println("Date: " + order.orderDate());

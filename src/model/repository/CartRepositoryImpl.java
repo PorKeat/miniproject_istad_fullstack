@@ -57,4 +57,19 @@ public class CartRepositoryImpl implements CartRepository {
 
         return carts;
     }
+
+    public void clearCart(Integer userId) {
+        String sql = "DELETE FROM carts WHERE user_id = ?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ps.executeUpdate();
+
+        } catch (SQLException e) {
+            System.out.println("[!] Error clearing cart for user ID " + userId + ": " + e.getMessage());
+            throw new RuntimeException("Failed to clear cart", e);
+        }
+    }
 }

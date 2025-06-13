@@ -17,4 +17,8 @@ public class CartServiceImpl implements CartService{
     public List<Cart> getUserCart(int userId) {
         return cartRepository.findByUserId(userId);
     }
+
+    public void deleteFromCart(int userId) {
+        cartRepository.clearCart(userId);
+    }
 }

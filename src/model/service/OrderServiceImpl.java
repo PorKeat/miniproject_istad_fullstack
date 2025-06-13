@@ -19,72 +19,70 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepositoryImpl orderRepository = new OrderRepositoryImpl();
     private final OrderProductRepositoryImpl orderProductRepository = new OrderProductRepositoryImpl();
     private final ProductRepositoryImpl productRepository = new ProductRepositoryImpl();
-    private final CartService cartService = new CartServiceImpl();
-    Connection conn = null;
+    private final CartServiceImpl cartService = new CartServiceImpl();
+
     @Override
     public OrderResponseDto placeOrder(Integer userId) throws IllegalStateException {
-        try(Connection conn = DBConnection.getConnection()) {
+        Connection conn = null;
+        try {
+            conn = DBConnection.getConnection();
             conn.setAutoCommit(false);
 
-            // 2. Get and validate cart items
-            List<CartItem> cartItems = cartService.getCartItems(userId);
-            if (cartItems == null || cartItems.isEmpty()) {
+            // 1. Get and validate cart items
+            List<Cart> carts = cartService.getUserCart(userId);
+            if (carts == null || carts.isEmpty()) {
                 throw new IllegalStateException("Cannot place order with empty cart");
             }
 
-            // 3. Validate stock and calculate total price
+            // 2. Get all products in cart and validate
+            List<Integer> productIds = carts.stream()
+                    .map(Cart::getProductId)
+                    .collect(Collectors.toList());
+
+            List<Product> products = productRepository.findByIds(conn, productIds);
+            if (products == null || products.size() != carts.size()) {
+                throw new IllegalStateException("Some products in cart are not available");
+            }
+
+            // 3. Calculate total price
             double totalPrice = 0;
-            for (CartItem item : cartItems) {
-                Product product = productRepository.findById(conn, item.getProductId());
-                if (product == null) {
-                    throw new IllegalStateException(
-                            String.format("Product with ID %d not found", item.getProductId()));
-                }
-                if (product.getStockQuantity() < item.getQty()) {
-                    throw new IllegalStateException(
-                            String.format("Not enough stock for %s (Available: %d, Requested: %d)",
-                                    product.getName(), product.getStockQuantity(), item.getQty()));
-                }
+            for (Cart item : carts) {
+                Product product = products.stream()
+                        .filter(p -> p.getId().equals(item.getProductId()))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalStateException(
+                                "Product with ID " + item.getProductId() + " not found"));
+
                 totalPrice += product.getPrice() * item.getQty();
             }
 
             // 4. Create and save order
-            Order order = new Order();
-            order.setUserId(userId);
-            order.setOrderDate(new Date(System.currentTimeMillis()));
-            order.setTotalPrice(totalPrice);
-            order.setOrderCode(generateOrderCode());
+            Order order = Order.builder()
+                    .userId(userId)
+                    .orderDate(new Date(System.currentTimeMillis()))
+                    .totalPrice(totalPrice)
+                    .orderCode(generateOrderCode())
+                    .build();
 
             Order createdOrder = orderRepository.createOrder(order);
-
-            // 5. Convert and save order products
-            List<OrderProduct> orderProducts = cartItems.stream()
-                    .map(item -> new OrderProduct(createdOrder.getId(), item.getProductId(), item.getQty()))
-                    .collect(Collectors.toList());
-
-            orderProductRepository.saveBatch(conn, orderProducts);
-
-            // 6. Update product stock
-            for (CartItem item : cartItems) {
-                int updatedRows = productRepository.updateStock(conn, item.getProductId(), -item.getQty());
-                if (updatedRows == 0) {
-                    throw new SQLException("Failed to update stock for product ID " + item.getProductId());
-                }
+            if (createdOrder == null) {
+                throw new SQLException("Failed to create order");
             }
 
-            // 7. Clear cart
-            cartService.clearCart(userId);
-
-            // 8. Commit transaction
-            conn.commit();
-
-            // 9. Prepare and return response
-            List<Integer> productIds = cartItems.stream()
-                    .map(CartItem::getProductId)
+            // 5. Convert and save order products
+            List<OrderProduct> orderProducts = carts.stream()
+                    .map(item -> new OrderProduct(createdOrder.getUserId(), item.getProductId(), item.getQty()))
                     .collect(Collectors.toList());
 
-            List<Product> products = productRepository.findByIds(conn, productIds);
+            orderProductRepository.createBatch(orderProducts);
 
+            // 6. Clear cart
+            cartService.deleteFromCart(userId);
+
+            // 7. Commit transaction
+            conn.commit();
+
+            // 8. Prepare and return response
             return OrderMapper.toOrderResponseDto(createdOrder, orderProducts, products);
 
         } catch (SQLException | IllegalStateException e) {
@@ -93,10 +91,10 @@ public class OrderServiceImpl implements OrderService {
                 try {
                     conn.rollback();
                 } catch (SQLException ex) {
-                    // Log the rollback error but propagate the original exception
                     System.err.println("Failed to rollback transaction: " + ex.getMessage());
                 }
             }
+            throw new IllegalStateException("Failed to place order: " + e.getMessage(), e);
         } finally {
             // Reset connection state
             if (conn != null) {

@@ -1,6 +1,7 @@
 package controller;
 
 import lombok.AllArgsConstructor;
+import model.dto.OrderResponseDto;
 import model.dto.ProductResponseDto;
 import model.entity.Cart;
 import model.entity.Category;
@@ -8,6 +9,7 @@ import model.entity.Product;
 import model.entity.User;
 import model.service.*;
 import View.View;
+import View.OrderView;
 import util.TablePaginator;
 
 import java.util.List;
@@ -22,6 +24,8 @@ public class AuthController {
     private final ProductService productService = new ProductServiceImpl();
     private final CategoryService categoryService = new CategoryServiceImpl();
     private final CartService cartService = new CartServiceImpl();
+    private final OrderService orderService = new OrderServiceImpl();
+    private final OrderView orderView = new OrderView();
     private final Scanner scanner = new Scanner(System.in);
 
 
@@ -250,6 +254,12 @@ public class AuthController {
                             .build());
 
                     System.out.println("✅ Product added to cart.");
+                }
+                case 4 -> {
+                    Integer userId = user.getId();
+                    OrderResponseDto orderResponse =  orderService.placeOrder(userId);
+                    orderService.placeOrder(userId);
+                    orderView.displayOrderDetails(orderResponse);
                 }
                 case 5->{
                     userService.logout();
