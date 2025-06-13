@@ -1,11 +1,11 @@
 import controller.AuthController;
 import model.service.UserService;
 import model.service.UserServiceImpl;
-import View.AuthView;
+import View.View;
 
 public class Main {
     public static void main(String[] args) {
-        AuthView view = new AuthView();
+        View view = new View();
         UserService userService = new UserServiceImpl();
         AuthController controller = new AuthController(userService, view);
         controller.handleSession();
