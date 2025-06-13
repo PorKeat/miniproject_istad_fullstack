@@ -2,6 +2,7 @@ package controller;
 
 import lombok.AllArgsConstructor;
 import model.dto.ProductResponseDto;
+import model.entity.Cart;
 import model.entity.Category;
 import model.entity.Product;
 import model.entity.User;
@@ -20,6 +21,7 @@ public class AuthController {
     private final View view;
     private final ProductService productService = new ProductServiceImpl();
     private final CategoryService categoryService = new CategoryServiceImpl();
+    private final CartService cartService = new CartServiceImpl();
     private final Scanner scanner = new Scanner(System.in);
 
 
@@ -27,24 +29,22 @@ public class AuthController {
     public void handleSession() {
         while (true) {
             String current = userService.getCurrentUser();
-
             if (current != null && !current.isBlank()) {
-                view.showAlreadyLoggedIn(current);
+                User user = userService.findByEmail(current);
 
-                if (view.promptLogout()) {
-                    userService.logout();
-                    view.showLogoutMessage();
-                } else {
-                    // Stay logged in → show dashboard
-                    User user = userService.findByEmail(current); // You need this method
-                    if (user != null) {
-                        switch (user.getRole().toLowerCase()) {
-                            case "admin" -> handleAdminTasks(user);
-                            case "user" -> handleUserTasks(user);
-                            default -> view.showError("Unknown role: " + user.getRole());
-                        }
+                if (user != null) {
+                    view.showAlreadyLoggedIn(current);
+
+                    switch (user.getRole().toLowerCase()) {
+                        case "admin" -> handleAdminTasks(user);
+                        case "user" -> handleUserTasks(user);
+                        default -> view.showError("Unknown role: " + user.getRole());
                     }
+                } else {
+                    view.showError("Logged in user not found.");
+                    userService.logout();
                 }
+
             } else {
                 switch (view.showMenu()) {
                     case 1 -> handleLogin();
@@ -54,6 +54,7 @@ public class AuthController {
             }
         }
     }
+
 
 
     private void handleLogin() {
@@ -209,6 +210,10 @@ public class AuthController {
                     view.showError("Failed to delete products: " + e.getMessage());
                 }
             }
+            case 9->{
+                userService.logout();
+                view.showLogoutMessage();
+            }
             default -> System.out.println("Invalid menu option.");
         }
     }
@@ -233,6 +238,22 @@ public class AuthController {
                     } else {
                         TablePaginator.productPaginateAndSelect(serachResult, new Scanner(System.in), 5);
                     }
+                }
+                case 3 -> {
+                    int productInput = view.getIntegerInput("Product ID");
+                    int qty = view.getIntegerInput("Qty");
+
+                    cartService.addToCart(Cart.builder()
+                            .userId(user.getId())
+                            .productId(productInput)
+                            .qty(qty)
+                            .build());
+
+                    System.out.println("✅ Product added to cart.");
+                }
+                case 5->{
+                    userService.logout();
+                    view.showLogoutMessage();
                 }
             }
         }catch (Exception e){
