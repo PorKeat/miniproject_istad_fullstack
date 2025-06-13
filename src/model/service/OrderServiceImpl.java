@@ -71,7 +71,10 @@ public class OrderServiceImpl implements OrderService {
 
             // 5. Convert and save order products
             List<OrderProduct> orderProducts = carts.stream()
-                    .map(item -> new OrderProduct(createdOrder.getUserId(), item.getProductId(), item.getQty()))
+                    .map(cartItem -> new OrderProduct(
+                            createdOrder.getId(), // Use the order ID from the saved order
+                            cartItem.getProductId(),
+                            cartItem.getQty()))
                     .collect(Collectors.toList());
 
             orderProductRepository.createBatch(orderProducts);
