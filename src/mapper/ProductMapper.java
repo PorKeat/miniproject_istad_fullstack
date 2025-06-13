@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 public class ProductMapper {
 
     public static ProductResponseDto fromProductToProductDto(Product product) {
-        return new ProductResponseDto(product.getUuid(), product.getName(), product.getPrice());
+        return new ProductResponseDto(product.getUuid(), product.getName(), product.getPrice(),product.getCategory());
     }
 
     public static List<ProductResponseDto> fromProductToProductDtoList(List<Product> products) {

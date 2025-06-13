@@ -57,37 +57,57 @@ public class ProductRepositoryImpl implements Repository<Product>,ProductReposit
             ps.setInt(1, id);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
             return false;
         }
     }
 
     @Override
     public List<Product> findAll() {
-        List<Product> products = new ArrayList<>();
-        String sql = "SELECT * FROM products WHERE is_deleted = false";
+        List<Product> productList = new ArrayList<>();
+
+        String sql = """ 
+                    SELECT c.category_name, p.p_uuid, p.p_name, p.price
+                    FROM categories c
+                    JOIN product_categories pc ON c.id = pc.category_id
+                    JOIN products p ON pc.product_id = p.id
+                    WHERE p.is_deleted = false
+                    ORDER BY c.category_name, p.p_name
+                    """;
+
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
-                products.add(new Product(
-                        rs.getInt("id"),
-                        rs.getString("p_name"),
-                        rs.getDouble("price"),
-                        rs.getBoolean("is_deleted"),
-                        rs.getString("p_uuid")
-                ));
+
+                productList.add(Product.builder()
+                        .uuid(rs.getString("p_uuid"))
+                        .name(rs.getString("p_name"))
+                        .price(rs.getDouble("price"))
+                        .category(rs.getString("category_name"))
+                        .build());
             }
+            return productList;
+
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.out.println("Error fetching products by category: " + e.getMessage());
         }
-        return products;
+
+        return null;
     }
 
     @Override
     public List<Product> searchByName(String name) {
-        String sql = "SELECT * FROM products WHERE p_name LIKE ? AND is_deleted = false";
+        String sql = """
+                    SELECT p.id, p.p_name, p.price, p.is_deleted, p.p_uuid,
+                           c.id AS category_id, c.category_name
+                    FROM products p
+                    LEFT JOIN product_categories pc ON p.id = pc.product_id
+                    LEFT JOIN categories c ON c.id = pc.category_id
+                    WHERE p.p_name LIKE ? AND p.is_deleted = false
+                    ORDER BY p.id;
+                    """;
         try(Connection conn = DBConnection.getConnection()){
             PreparedStatement ps = conn.prepareStatement(sql);
             ps.setString(1,"%"+name+ "%");
@@ -99,7 +119,8 @@ public class ProductRepositoryImpl implements Repository<Product>,ProductReposit
                             rs.getString("p_name"),
                             rs.getDouble("price"),
                             rs.getBoolean("is_deleted"),
-                            rs.getString("p_uuid")
+                            rs.getString("p_uuid"),
+                            rs.getString("category_name")
                     ));
                 }
             }
@@ -111,7 +132,14 @@ public class ProductRepositoryImpl implements Repository<Product>,ProductReposit
     }
 
     public Product findByUuid(String uuid) {
-        String sql = "SELECT * FROM products WHERE p_uuid = ? AND is_deleted = false";
+        String sql = """
+                    SELECT p.id, p.p_name, p.price, p.is_deleted, p.p_uuid,
+                           c.id AS category_id, c.category_name
+                    FROM products p
+                    LEFT JOIN product_categories pc ON p.id = pc.product_id
+                    LEFT JOIN categories c ON c.id = pc.category_id
+                    WHERE p.p_uuid = ? AND p.is_deleted = false
+                    """;
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)){
              ps.setString(1, uuid);
@@ -122,12 +150,13 @@ public class ProductRepositoryImpl implements Repository<Product>,ProductReposit
                              rs.getString("p_name"),
                              rs.getDouble("price"),
                              rs.getBoolean("is_deleted"),
-                             rs.getString("p_uuid")
+                             rs.getString("p_uuid"),
+                             rs.getString("category_name")
                      );
                  }
              }
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         }
         return null;
     }

@@ -128,6 +128,7 @@ public class AuthController {
                             Double.parseDouble(input[1]),
                             false,
                             UUID.randomUUID().toString()
+                            ,selected.getCategoryName()
                     );
                     productService.addProduct(product, categoryId);
                     System.out.println("✅ Product added successfully.");
@@ -214,32 +215,28 @@ public class AuthController {
 
 
     private void handleUserTasks(User user) {
-        System.out.println("Welcome to our system, " + user.getUserName());
-        switch (view.userMenu()){
-            case 1 ->{
-                try {
+        try{
+            System.out.println("Welcome to our system, " + user.getUserName());
+            switch (view.userMenu()){
+                case 1 ->{
                     List<ProductResponseDto> products = productService.getAllProducts();
                     if (products.isEmpty()) {
                         System.out.println("No products found.");
                     } else {
-                        TablePaginator.productPaginateAndSelect(products, new Scanner(System.in), 5);
+                            TablePaginator.productPaginateAndSelect(products, new Scanner(System.in), 5);
                     }
-                } catch (Exception e) {
-                    view.showError("Failed to fetch products: " + e.getMessage());
                 }
-            }
-            case 2 ->{
-                try {
+                case 2 ->{
                     List<ProductResponseDto> serachResult = productService.searchProductByName(view.getStringInput("Product Name"));
-                        if (serachResult.isEmpty()) {
-                            System.out.println("No products found.");
-                        } else {
-                            TablePaginator.productPaginateAndSelect(serachResult, new Scanner(System.in), 5);
-                        }
-                } catch (Exception e) {
-                        view.showError("Failed to fetch products: " + e.getMessage());
+                    if (serachResult.isEmpty()) {
+                        System.out.println("No products found.");
+                    } else {
+                        TablePaginator.productPaginateAndSelect(serachResult, new Scanner(System.in), 5);
+                    }
                 }
             }
+        }catch (Exception e){
+            System.out.println(e.getMessage());
         }
     }
 }

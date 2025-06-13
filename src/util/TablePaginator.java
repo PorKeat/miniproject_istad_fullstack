@@ -65,7 +65,7 @@ public class TablePaginator {
             int start = page * pageSize;
             int end = Math.min(start + pageSize, total);
 
-            Table table = new Table(3, BorderStyle.UNICODE_BOX_DOUBLE_BORDER, ShownBorders.ALL);
+            Table table = new Table(4, BorderStyle.UNICODE_BOX_DOUBLE_BORDER, ShownBorders.ALL);
             table.setColumnWidth(0, 15, 25);
             table.setColumnWidth(1, 30, 45);
             table.setColumnWidth(2, 10, 15);
@@ -73,12 +73,14 @@ public class TablePaginator {
             table.addCell("UUID", center);
             table.addCell("Product Name", center);
             table.addCell("Price", center);
+            table.addCell("Category",center);
 
             for (int i = start; i < end; i++) {
                 ProductResponseDto p = list.get(i);
                 table.addCell(p.uuid(), center);
                 table.addCell(p.name(), center);
                 table.addCell(String.format("%.2f", p.price()), center);
+                table.addCell(p.category(),center);
             }
 
             System.out.println(table.render());

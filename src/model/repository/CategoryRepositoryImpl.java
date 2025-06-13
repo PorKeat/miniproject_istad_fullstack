@@ -2,8 +2,6 @@ package model.repository;
 
 import db.DBConnection;
 import model.entity.Category;
-import model.entity.Product;
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +16,7 @@ public class CategoryRepositoryImpl implements Repository<Category>,CategoryRepo
             ps.setString(1, categoryName);
             ps.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         }
     }
 
@@ -30,7 +28,7 @@ public class CategoryRepositoryImpl implements Repository<Category>,CategoryRepo
             ps.setInt(1, id);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
             return false;
         }
     }
