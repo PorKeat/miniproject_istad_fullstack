@@ -170,7 +170,7 @@ public class TablePaginator {
                 table.addCell(c.getProductName(), center);
                 table.addCell(String.valueOf(c.getQty()), center);
                 table.addCell(String.valueOf(c.getPrice()), center);
-                table.addCell(String.valueOf((c.getQty()*c.getPrice())),center);
+                table.addCell(String.format("%.2f", c.getQty() * c.getPrice()),center);
             }
 
             System.out.println(table.render());

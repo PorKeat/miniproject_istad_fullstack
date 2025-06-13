@@ -1,8 +1,11 @@
 package model.repository;
 
 import model.entity.Order;
+import model.entity.OrderProduct;
 import model.repository.OrderRepository;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class OrderRepositoryImpl implements OrderRepository {
@@ -69,4 +72,32 @@ public class OrderRepositoryImpl implements OrderRepository {
             stmt.executeUpdate();
         }
     }
+
+    public List<OrderProduct> getOrderProducts(Connection conn, int orderId) throws SQLException {
+        String sql = """
+        SELECT op.product_id, p.p_name, p.price, op.qty
+        FROM order_products op
+        JOIN products p ON op.product_id = p.id
+        WHERE op.order_id = ?
+    """;
+
+        List<OrderProduct> products = new ArrayList<>();
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, orderId);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                OrderProduct product = new OrderProduct();
+                product.setProductId(rs.getInt("product_id"));
+                product.setProductName(rs.getString("p_name"));
+                product.setProductPrice(rs.getDouble("price"));
+                product.setQty(rs.getInt("qty"));
+                products.add(product);
+            }
+        }
+        return products;
+    }
+
+
+
 }
