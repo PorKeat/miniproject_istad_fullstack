@@ -5,15 +5,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.sql.Date;
+
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Product {
-    private Integer id;
-    private String name;
-    private double price;
-    private boolean isDeleted;
-    private String uuid;
-    private String category;
+public class Cart {
+    private int userId;
+    private int productId;
+    private int qty;
+    private Date addedAt;
 }
